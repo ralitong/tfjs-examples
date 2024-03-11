@@ -31,7 +31,7 @@ export function determineMeanAndStddev(data) {
   const squaredDiffFromMean = diffFromMean.square();
   const variance = squaredDiffFromMean.mean(0);
   const dataStd = variance.sqrt();
-  return {dataMean, dataStd};
+  return { dataMean, dataStd };
 }
 
 /**
@@ -47,4 +47,42 @@ export function determineMeanAndStddev(data) {
  */
 export function normalizeTensor(data, dataMean, dataStd) {
   return data.sub(dataMean).div(dataStd);
+}
+
+/**
+ * Normalizes a dataset by subtracting the mean and dividing by the standard
+ * deviation.
+ *
+ * @param {Tensor2D} data: Data to normalize. Shape: [batch, numFeatures].
+ * @returns {Tensor2D}: Tensor the same shape as data, but each column
+ * normalized to have zero mean and unit standard deviation.
+ */
+export function normalizeTensorWithZScore(data) {
+  const { mean, std } = determineMeanAndStddev(data);
+  return normalizeTensor(data, mean, std);
+}
+
+/**
+ * Normalizes a dataset by subtracting the min and dividing by the max.
+ *
+ * @param {Tensor2d} data: Data to normalize. Shape: [batch, numFeatures].
+ *
+ * @returns {Tensor2d}: Tensor the same shape as data, but each column
+ * normalized to have minimum 0 and maximum 1.
+ */
+export function normalizeTensorWithMinMax(data) {
+  const min = data.min(0);
+  const max = data.max(0);
+  return data.sub(min).div(max.sub(min));
+}
+
+/**
+ * Normalizes a dataset by taking the log of each element.
+ * @param {Tensor2d} data: Data to normalize. Shape: [batch, numFeatures].
+ *
+ * @returns {Tensor2d}: Tensor the same shape as data, but each column
+ * normalized by taking the log base 10 of each element.
+ */
+export function normalizeTensorWithLogScaling(data) {
+  return data.log().div(Math.log(10));
 }

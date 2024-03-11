@@ -18,7 +18,7 @@
 import * as tf from '@tensorflow/tfjs';
 import * as tfvis from '@tensorflow/tfjs-vis';
 
-import {BostonHousingDataset, featureDescriptions} from './data';
+import { BostonHousingDataset, featureDescriptions } from './data';
 import * as normalization from './normalization';
 import * as ui from './ui';
 
@@ -29,6 +29,8 @@ const LEARNING_RATE = 0.01;
 
 const bostonData = new BostonHousingDataset();
 const tensors = {};
+let normaliztion_mode = 'z-score';
+
 
 // Convert loaded data into tensors and creates normalized versions of the
 // features.
@@ -37,14 +39,34 @@ export function arraysToTensors() {
   tensors.trainTarget = tf.tensor2d(bostonData.trainTarget);
   tensors.rawTestFeatures = tf.tensor2d(bostonData.testFeatures);
   tensors.testTarget = tf.tensor2d(bostonData.testTarget);
-  // Normalize mean and standard deviation of data.
-  let {dataMean, dataStd} =
-      normalization.determineMeanAndStddev(tensors.rawTrainFeatures);
 
-  tensors.trainFeatures = normalization.normalizeTensor(
-      tensors.rawTrainFeatures, dataMean, dataStd);
-  tensors.testFeatures =
-      normalization.normalizeTensor(tensors.rawTestFeatures, dataMean, dataStd);
+  switch (normaliztion_mode) {
+    case 'z-score':
+      // Normalize mean and standard deviation of data.
+      console.log('Creating normalized tensors')
+      let { dataMean, dataStd } =
+        normalization.determineMeanAndStddev(tensors.rawTrainFeatures);
+
+      tensors.trainFeatures = normalization.normalizeTensor(
+        tensors.rawTrainFeatures, dataMean, dataStd);
+      tensors.testFeatures =
+        normalization.normalizeTensor(tensors.rawTestFeatures, dataMean, dataStd);
+      break;
+    case 'min-max':
+      console.log('Creating min-max normalized tensors')
+      tensors.trainFeatures = normalization.normalizeTensorWithMinMax(tensors.rawTrainFeatures);
+      tensors.testFeatures = normalization.normalizeTensorWithMinMax(tensors.rawTestFeatures);
+      break;
+    case 'log-scaling':
+      console.log('Creating log scaled tensors')
+      tensors.trainFeatures = normalization.normalizeTensorWithLogScaling(tensors.rawTrainFeatures);
+      tensors.testFeatures = normalization.normalizeTensorWithLogScaling(tensors.rawTestFeatures);
+      break;
+    default:
+      console.log('No normalization mode selected');
+      tensors.trainFeatures = tensors.rawTrainFeatures;
+      tensors.testFeatures = tensors.rawTestFeatures;
+  }
 };
 
 /**
@@ -54,7 +76,7 @@ export function arraysToTensors() {
  */
 export function linearRegressionModel() {
   const model = tf.sequential();
-  model.add(tf.layers.dense({inputShape: [bostonData.numFeatures], units: 1}));
+  model.add(tf.layers.dense({ inputShape: [bostonData.numFeatures], units: 1 }));
 
   model.summary();
   return model;
@@ -74,7 +96,7 @@ export function multiLayerPerceptronRegressionModel1Hidden() {
     activation: 'sigmoid',
     kernelInitializer: 'leCunNormal'
   }));
-  model.add(tf.layers.dense({units: 1}));
+  model.add(tf.layers.dense({ units: 1 }));
 
   model.summary();
   return model;
@@ -95,8 +117,8 @@ export function multiLayerPerceptronRegressionModel2Hidden() {
     kernelInitializer: 'leCunNormal'
   }));
   model.add(tf.layers.dense(
-      {units: 50, activation: 'sigmoid', kernelInitializer: 'leCunNormal'}));
-  model.add(tf.layers.dense({units: 1}));
+    { units: 50, activation: 'sigmoid', kernelInitializer: 'leCunNormal' }));
+  model.add(tf.layers.dense({ units: 1 }));
 
   model.summary();
   return model;
@@ -112,11 +134,11 @@ export function multiLayerPerceptronRegressionModel2Hidden() {
  */
 export function describeKernelElements(kernel) {
   tf.util.assert(
-      kernel.length == 12,
-      `kernel must be a array of length 12, got ${kernel.length}`);
+    kernel.length == 12,
+    `kernel must be a array of length 12, got ${kernel.length}`);
   const outList = [];
   for (let idx = 0; idx < kernel.length; idx++) {
-    outList.push({description: featureDescriptions[idx], value: kernel[idx]});
+    outList.push({ description: featureDescriptions[idx], value: kernel[idx] });
   }
   return outList;
 }
@@ -131,7 +153,7 @@ export function describeKernelElements(kernel) {
  */
 export async function run(model, modelName, weightsIllustration) {
   model.compile(
-      {optimizer: tf.train.sgd(LEARNING_RATE), loss: 'meanSquaredError'});
+    { optimizer: tf.train.sgd(LEARNING_RATE), loss: 'meanSquaredError' });
 
   let trainLogs = [];
   const container = document.querySelector(`#${modelName} .chart`);
@@ -144,7 +166,7 @@ export async function run(model, modelName, weightsIllustration) {
     callbacks: {
       onEpochEnd: async (epoch, logs) => {
         await ui.updateModelStatus(
-            `Epoch ${epoch + 1} of ${NUM_EPOCHS} completed.`, modelName);
+          `Epoch ${epoch + 1} of ${NUM_EPOCHS} completed.`, modelName);
         trainLogs.push(logs);
         tfvis.show.history(container, trainLogs, ['loss', 'val_loss'])
 
@@ -160,16 +182,16 @@ export async function run(model, modelName, weightsIllustration) {
 
   ui.updateStatus('Running on test data...');
   const result = model.evaluate(
-      tensors.testFeatures, tensors.testTarget, {batchSize: BATCH_SIZE});
+    tensors.testFeatures, tensors.testTarget, { batchSize: BATCH_SIZE });
   const testLoss = result.dataSync()[0];
 
   const trainLoss = trainLogs[trainLogs.length - 1].loss;
   const valLoss = trainLogs[trainLogs.length - 1].val_loss;
   await ui.updateModelStatus(
-      `Final train-set loss: ${trainLoss.toFixed(4)}\n` +
-          `Final validation-set loss: ${valLoss.toFixed(4)}\n` +
-          `Test-set loss: ${testLoss.toFixed(4)}`,
-      modelName);
+    `Final train-set loss: ${trainLoss.toFixed(4)}\n` +
+    `Final validation-set loss: ${valLoss.toFixed(4)}\n` +
+    `Test-set loss: ${testLoss.toFixed(4)}`,
+    modelName);
 };
 
 export function computeBaseline() {
@@ -177,21 +199,27 @@ export function computeBaseline() {
   console.log(`Average price: ${avgPrice.dataSync()}`);
   const baseline = tensors.testTarget.sub(avgPrice).square().mean();
   console.log(`Baseline loss: ${baseline.dataSync()}`);
-  const baselineMsg = `Baseline loss (meanSquaredError) is ${
-      baseline.dataSync()[0].toFixed(2)}`;
+  const baselineMsg = `Baseline loss (meanSquaredError) is ${baseline.dataSync()[0].toFixed(2)}`;
   ui.updateBaselineStatus(baselineMsg);
 };
 
-document.addEventListener('DOMContentLoaded', async () => {
+export function setNormalizationMode(mode) {
+  normaliztion_mode = mode;
+}
+
+export async function initializeData() {
+  ui.updateStatus('Loading data...');
   await bostonData.loadData();
   ui.updateStatus('Data loaded, converting to tensors');
   arraysToTensors();
   ui.updateStatus(
-      'Data is now available as tensors.\n' +
-      'Click a train button to begin.');
-  // TODO Explain what baseline loss is. How it is being computed in this
-  // Instance
+    'Data is now available as tensors.\n' +
+    'Click a train button to begin.');
   ui.updateBaselineStatus('Estimating baseline loss');
   computeBaseline();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await initializeData();
   await ui.setup();
 }, false);
