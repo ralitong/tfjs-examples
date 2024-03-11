@@ -62,6 +62,10 @@ export function arraysToTensors() {
       tensors.trainFeatures = normalization.normalizeTensorWithLogScaling(tensors.rawTrainFeatures);
       tensors.testFeatures = normalization.normalizeTensorWithLogScaling(tensors.rawTestFeatures);
       break;
+    case 'robust-scaling':
+      console.log('Creating robust scaled tensors')
+      tensors.trainFeatures = normalization.normalizeTensorWithRobustScaling(tensors.rawTrainFeatures);
+      tensors.testFeatures = normalization.normalizeTensorWithRobustScaling(tensors.rawTestFeatures);
     default:
       console.log('No normalization mode selected');
       tensors.trainFeatures = tensors.rawTrainFeatures;

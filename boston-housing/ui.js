@@ -81,6 +81,7 @@ export async function setup() {
   const zScoreNormalization = document.getElementById('z-score-normalization');
   const minMaxNormalization = document.getElementById('min-max-normalization');
   const logScalingNormalization = document.getElementById('log-scaling-normalization');
+  const robustScalingNormalization = document.getElementById('robust-scaling-normalization');
 
   trainSimpleLinearRegression.addEventListener('click', async (e) => {
     const model = linearRegressionModel();
@@ -120,6 +121,12 @@ export async function setup() {
   logScalingNormalization.addEventListener('click', async () => {
     updateNormalizationStatus('Log scaling normalization enabled');
     setNormalizationMode('log-scaling');
+    await initializeData();
+  }, false);
+
+  robustScalingNormalization.addEventListener('click', async () => {
+    updateNormalizationStatus('Robust scaling normalization enabled');
+    setNormalizationMode('robust-scaling');
     await initializeData();
   }, false);
 };

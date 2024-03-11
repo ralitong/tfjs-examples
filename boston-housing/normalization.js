@@ -84,5 +84,21 @@ export function normalizeTensorWithMinMax(data) {
  * normalized by taking the log base 10 of each element.
  */
 export function normalizeTensorWithLogScaling(data) {
-  return data.log().div(Math.log(10));
+  return data.log().div(tf.log(10));
+}
+
+/**
+ * Normalizes a dataset by subtracting the median and dividing by the interquartile range.
+ * RobustScaling = (data - median) / IQR
+ * where IQR = Q3 - Q1
+ * @param {Tensor2d} data: Data to normalize. Shape: [batch, numFeatures].
+ *
+ * @returns {Tensor2d}: Tensor the same shape as data, but each column
+ */
+export function normalizeTensorWithRobustScaling(data) {
+  const median = data.median(0);
+  const quartiles = data.quartile(0);
+  const min = quartiles.slice([0], [1]); // Lower quartile. Q1
+  const max = quartiles.slice([2], [3]); // Upper quartile. Q3
+  return data.sub(median).div(max.sub(min));
 }
