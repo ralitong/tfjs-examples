@@ -15,7 +15,7 @@
  * =============================================================================
  */
 
-import {linearRegressionModel, multiLayerPerceptronRegressionModel1Hidden, multiLayerPerceptronRegressionModel2Hidden, run} from '.';
+import { linearRegressionModel, multiLayerPerceptronRegressionModel1Hidden, multiLayerPerceptronRegressionModel2Hidden, run, initializeData, setNormalizationMode } from '.';
 
 const statusElement = document.getElementById('status');
 export function updateStatus(message) {
@@ -26,6 +26,11 @@ const baselineStatusElement = document.getElementById('baselineStatus');
 export function updateBaselineStatus(message) {
   baselineStatusElement.innerText = message;
 };
+
+const normalizationStatusElement = document.getElementById('normalizationStatus');
+function updateNormalizationStatus(message) {
+  normalizationStatusElement.textContent = message;
+}
 
 export function updateModelStatus(message, modelName) {
   const statElement = document.querySelector(`#${modelName} .status`);
@@ -41,9 +46,9 @@ const NUM_TOP_WEIGHTS_TO_DISPLAY = 5;
  */
 export function updateWeightDescription(weightsList) {
   const inspectionHeadlineElement =
-      document.getElementById('inspectionHeadline');
+    document.getElementById('inspectionHeadline');
   inspectionHeadlineElement.innerText =
-      `Top ${NUM_TOP_WEIGHTS_TO_DISPLAY} weights by magnitude`;
+    `Top ${NUM_TOP_WEIGHTS_TO_DISPLAY} weights by magnitude`;
   // Sort weights objects by descending absolute value.
   weightsList.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
   var table = document.getElementById('myTable');
@@ -69,9 +74,14 @@ export function updateWeightDescription(weightsList) {
 export async function setup() {
   const trainSimpleLinearRegression = document.getElementById('simple-mlr');
   const trainNeuralNetworkLinearRegression1Hidden =
-      document.getElementById('nn-mlr-1hidden');
+    document.getElementById('nn-mlr-1hidden');
   const trainNeuralNetworkLinearRegression2Hidden =
-      document.getElementById('nn-mlr-2hidden');
+    document.getElementById('nn-mlr-2hidden');
+  const turnOffNormalizationButton = document.getElementById('turn-off-normalization');
+  const zScoreNormalization = document.getElementById('z-score-normalization');
+  const minMaxNormalization = document.getElementById('min-max-normalization');
+  const logScalingNormalization = document.getElementById('log-scaling-normalization');
+  const robustScalingNormalization = document.getElementById('robust-scaling-normalization');
 
   trainSimpleLinearRegression.addEventListener('click', async (e) => {
     const model = linearRegressionModel();
@@ -79,14 +89,44 @@ export async function setup() {
   }, false);
 
   trainNeuralNetworkLinearRegression1Hidden.addEventListener(
-      'click', async () => {
-        const model = multiLayerPerceptronRegressionModel1Hidden();
-        await run(model, 'oneHidden', false);
-      }, false);
+    'click', async () => {
+      const model = multiLayerPerceptronRegressionModel1Hidden();
+      await run(model, 'oneHidden', false);
+    }, false);
 
   trainNeuralNetworkLinearRegression2Hidden.addEventListener(
-      'click', async () => {
-        const model = multiLayerPerceptronRegressionModel2Hidden();
-        await run(model, 'twoHidden', false);
-      }, false);
+    'click', async () => {
+      const model = multiLayerPerceptronRegressionModel2Hidden();
+      await run(model, 'twoHidden', false);
+    }, false);
+
+  turnOffNormalizationButton.addEventListener('click', async () => {
+    updateNormalizationStatus('Normalization disabled');
+    setNormalizationMode('none');
+    await initializeData();
+  }, false);
+
+  zScoreNormalization.addEventListener('click', async () => {
+    updateNormalizationStatus('Z-score normalization enabled');
+    setNormalizationMode('z-score');
+    await initializeData();
+  }, false);
+
+  minMaxNormalization.addEventListener('click', async () => {
+    updateNormalizationStatus('Min-max normalization enabled');
+    setNormalizationMode('min-max');
+    await initializeData();
+  }, false);
+
+  logScalingNormalization.addEventListener('click', async () => {
+    updateNormalizationStatus('Log scaling normalization enabled');
+    setNormalizationMode('log-scaling');
+    await initializeData();
+  }, false);
+
+  robustScalingNormalization.addEventListener('click', async () => {
+    updateNormalizationStatus('Robust scaling normalization enabled');
+    setNormalizationMode('robust-scaling');
+    await initializeData();
+  }, false);
 };
